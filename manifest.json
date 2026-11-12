@@ -1,6 +1,6 @@
 {
-  "name": "Site Visit Hub",
-  "short_name": "Site Visits",
+  "name": "RM Hub",
+  "short_name": "RM Hub",
   "start_url": "./",
   "scope": "./",
   "display": "browser",
