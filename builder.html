@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checklist Builder</title>
+<meta name="theme-color" content="#14304a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: navy race-header band, start picker or editor of stacked section cards, sticky navy save bar */
+:root{
+  --navy:#14304a; --navy-2:#1d4466; --yellow:#ffd200; --red:#ef3a2f; --orange:#ff8a1f; --ink-on-yellow:#14243a;
+  --bg:#eef1f5; --surface:#ffffff; --fg:#14243a; --muted:#5d6b7c; --line:#d9e0e8; --soft:#f5f7fa;
+  --good:#16804a; --emerg:#c4271c; --emerg-bg:#fde3e0;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0b1724; --surface:#132538; --fg:#eaf0f6; --muted:#97a8ba; --line:#22384f; --soft:#0f1f30;
+  --good:#5fd394; --emerg:#ff8a7a; --emerg-bg:#3f1714; color-scheme:dark}}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--navy);z-index:10}
+.gutter{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.inner{max-width:620px;margin:0 auto}
+.band{position:relative;overflow:hidden;background:var(--navy);color:#fff;padding-top:env(safe-area-inset-top,0px)}
+.band .inner{position:relative;padding-block:14px 22px;display:flex;flex-direction:column;gap:12px}
+.stripes{position:absolute;right:-110px;top:-50px;width:230px;height:240px;transform:rotate(-24deg);display:flex;gap:9px}
+.stripes i{display:block;width:22px;height:100%;border-radius:4px}
+.stripes i:nth-child(1){background:var(--red)}.stripes i:nth-child(2){background:var(--orange)}.stripes i:nth-child(3){background:var(--yellow)}
+.top{position:relative;display:flex;justify-content:space-between;align-items:center}
+.back{font-size:.8rem;font-weight:700;padding:7px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.28);background:rgba(20,48,74,.75);color:#fff;text-decoration:none}
+.kicker{position:relative;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--yellow)}
+h1{position:relative;font-family:var(--display);font-style:italic;font-weight:800;font-size:2.4rem;line-height:.9;margin:2px 0 0;text-transform:uppercase}
+
+main{display:flex;flex-direction:column;gap:18px;padding-block:20px 130px}
+h2{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.35rem;letter-spacing:.04em;text-transform:uppercase;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(20,48,74,.06)}
+.pad{padding:16px;display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--muted);font-size:.85rem;margin:0}
+label.l{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.82rem;min-width:0}
+input[type=text],input[type=email],textarea{font:inherit;width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+textarea{min-height:56px;resize:vertical}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;font:inherit;font-size:.82rem;font-weight:700;padding:9px 10px;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:600}
+.switch small{display:block;color:var(--muted);font-weight:400;font-size:.8rem}
+.tog{position:relative;width:48px;height:28px;flex-shrink:0;border-radius:99px;border:0;background:var(--line);cursor:pointer;padding:0}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.tog[aria-pressed="true"]{background:var(--good)}
+.tog[aria-pressed="true"]::after{left:23px}
+
+/* start picker */
+.starts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:400px){.starts{grid-template-columns:1fr}}
+.start{font:inherit;text-align:left;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-width:0}
+.start b{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.3rem;text-transform:uppercase;line-height:1}
+.start span{color:var(--muted);font-size:.8rem}
+.start.blank{background:var(--yellow);border-color:var(--yellow);color:var(--ink-on-yellow)}
+.start.blank span{color:var(--ink-on-yellow);opacity:.75}
+
+/* sections */
+.sec{overflow:hidden}
+.sec-head{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;background:var(--soft);border-bottom:1px solid var(--line)}
+.sec-head .type{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sec-head .ttl{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec-head .cnt{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.icons{display:flex;gap:4px;flex-shrink:0}
+.ib{font:inherit;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;font-size:.9rem;line-height:1;padding:0}
+.ib.del{color:var(--emerg)}
+.ib:disabled{opacity:.35;cursor:default}
+.expand{font:inherit;font-size:.8rem;font-weight:700;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;white-space:nowrap}
+.sec-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.item{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+.item-top{display:flex;gap:8px;align-items:flex-start}
+.item-top input{flex:1}
+.flags{display:flex;gap:8px;flex-wrap:wrap}
+.flag{font:inherit;font-size:.78rem;font-weight:700;padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.flag[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--yellow)}
+.add{font:inherit;font-weight:700;font-size:.85rem;padding:10px 14px;border-radius:12px;border:1.5px dashed var(--line);background:transparent;color:var(--fg);cursor:pointer;align-self:flex-start}
+.adds{display:flex;flex-wrap:wrap;gap:8px}
+
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--navy);color:#fff;
+  padding:12px max(18px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));box-shadow:0 -6px 20px rgba(0,0,0,.18)}
+.bar-in{max-width:620px;margin:0 auto;display:flex;align-items:center;gap:10px;justify-content:space-between}
+button.primary{font:inherit;font-weight:800;padding:13px 24px;border-radius:12px;border:0;background:var(--yellow);color:var(--ink-on-yellow);cursor:pointer}
+button.primary:disabled{opacity:.6}
+button.ghost{font:inherit;font-weight:700;font-size:.85rem;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer}
+button.ghost.danger{color:#ffb4ab;border-color:rgba(255,138,122,.5)}
+.msg{padding:12px 14px;border-radius:12px;font-size:.9rem}
+.msg.err{background:var(--emerg-bg);color:var(--emerg)}
+.confirm{display:flex;flex-direction:column;gap:10px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.tog::after{transition:none}}
+</style>
+</head>
+<body>
+<header class="band gutter">
+  <div class="stripes" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="inner">
+    <div class="top"><a class="back" href="./">‹ Hub</a></div>
+    <div>
+      <div class="kicker" id="kicker">Checklist builder</div>
+      <h1 id="h1">New checklist</h1>
+    </div>
+  </div>
+</header>
+
+<main class="inner gutter" id="main">
+  <section class="card" id="profile" hidden>
+    <div class="pad">
+      <strong>Sign in with your work email</strong>
+      <p class="muted">Your checklists are saved under this email, so they follow you to any phone. Asked once.</p>
+      <label class="l" for="rmName">Your name<input type="text" id="rmName" autocomplete="name"></label>
+      <label class="l" for="rmEmail">Your work email<input type="email" id="rmEmail" autocomplete="email" inputmode="email"></label>
+      <button class="primary" type="button" id="saveProfile">Continue</button>
+      <div class="msg err" id="profileErr" hidden></div>
+    </div>
+  </section>
+
+  <section id="picker" hidden>
+    <div class="pad" style="padding:0">
+      <h2>Start from</h2>
+      <p class="muted">Pick a starting point. Copies are yours to change; the originals stay as they are.</p>
+      <div class="starts" id="starts"></div>
+    </div>
+  </section>
+
+  <div id="editor" hidden style="display:contents">
+    <section class="card">
+      <div class="pad">
+        <label class="l" for="cTitle">Checklist name<input type="text" id="cTitle" placeholder="e.g. Lube Center Check"></label>
+        <label class="l" for="cSub">Short description<input type="text" id="cSub" placeholder="e.g. Lube bays, pits and waiting room"></label>
+        <div class="l"><span>Rating buttons</span>
+          <div class="seg" role="group" aria-label="Rating buttons">
+            <button type="button" id="lv2">Good · Needs work</button>
+            <button type="button" id="lv3">+ Emergency</button>
+          </div>
+        </div>
+        <div class="switch"><span>Email me the report<small>Off saves the visit to the log without emailing you</small></span><button type="button" class="tog" id="tEmail" aria-label="Email me the report"></button></div>
+        <div class="switch"><span>Share with all RMs<small>They can use it and copy it. Only you can change it</small></span><button type="button" class="tog" id="tShare" aria-label="Share with all RMs"></button></div>
+      </div>
+    </section>
+
+    <div id="sections" style="display:contents"></div>
+
+    <section class="card">
+      <div class="pad">
+        <strong>Add a section</strong>
+        <div class="adds">
+          <button type="button" class="add" data-add="items">+ Checklist items</button>
+          <button type="button" class="add" data-add="text">+ Notes box</button>
+          <button type="button" class="add" data-add="yesno">+ Yes / No questions</button>
+          <button type="button" class="add" data-add="photo">+ Photo</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="confirmDel" hidden>
+      <div class="pad confirm">
+        <strong>Delete this checklist?</strong>
+        <p class="muted">It's removed for you and anyone it's shared with. Past visits stay in the log.</p>
+        <div class="adds"><button type="button" class="primary" id="yesDel" style="background:var(--emerg);color:#fff">Delete it</button><button type="button" class="add" id="noDel">Keep it</button></div>
+      </div>
+    </section>
+    <div class="msg err" id="err" hidden></div>
+  </div>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <button type="button" class="ghost danger" id="del" hidden>Delete</button>
+    <span style="flex:1"></span>
+    <button type="button" class="primary" id="save">Save checklist</button>
+  </div>
+</div>
+
+<script src="checklists.js"></script>
+<script>
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+const params = new URLSearchParams(location.search);
+let EDIT_ID = params.get("id"); const COPY_ID = params.get("copy"), FROM = params.get("from");
+const KIND_LABEL = { items:"Checklist items", text:"Notes box", yesno:"Yes / No questions", photo:"Photo" };
+let D = null;          // the checklist being edited
+let openSec = {};      // which sections are expanded
+let custom = [];       // checklists from the script (mine + shared)
+
+/* ---- profile ---- */
+function profile(){ return lsGet(PROFILE_KEY); }
+$("saveProfile").onclick = ()=>{
+  const name=$("rmName").value.trim(), email=$("rmEmail").value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $("profileErr").textContent="Enter a full email address, like name@speeders.com."; $("profileErr").hidden=false; return; }
+  lsSet(PROFILE_KEY,{name,email}); $("profile").hidden=true; boot();
+};
+
+/* ---- start picker ---- */
+function showPicker(){
+  $("picker").hidden=false;
+  const box=$("starts"); box.innerHTML="";
+  const add=(title,sub,cls,fn)=>{ const b=el("button","start "+(cls||"")); b.type="button"; b.append(el("b",null,title), el("span",null,sub)); b.onclick=fn; box.append(b); };
+  add("Blank","Build it from scratch","blank",()=>openEditor({ title:"", subtitle:"", levels:2, shared:false, emailMe:true, sections:[newSection("items")] }));
+  add("Tunnel Walk","Copy the 19 tunnel checks","",()=>openEditor(standardToCustom("tunnel")));
+  add("Operations Visit","Copy the full site visit","",()=>openEditor(standardToCustom("ops")));
+  custom.forEach(c=>add(c.title, c.mine ? "Copy one of yours" : "Shared by "+(c.ownerName||c.owner),"",()=>openEditor(copyOf(c.def))));
+}
+function copyOf(def){
+  const c = JSON.parse(JSON.stringify(def));
+  c.title = (c.title||"Checklist") + " (my copy)"; c.shared = false;
+  (c.sections||[]).forEach(s=>{ s.id=uid(); (s.items||[]).forEach(i=>i.id=uid()); (s.qs||[]).forEach(q=>q.id=uid()); });
+  return c;
+}
+function newSection(kind){
+  if (kind==="items") return { kind, id:uid(), title:"New section", private:false, note:"", items:[{ id:uid(), t:"", d:"", photo:true, private:false }] };
+  if (kind==="text") return { kind, id:uid(), title:"Notes", private:false, placeholder:"" };
+  if (kind==="yesno") return { kind, id:uid(), title:"Before you leave", qs:[{ id:uid(), q:"" }] };
+  return { kind:"photo", id:uid(), title:"Photo", note:"" };
+}
+
+/* ---- editor ---- */
+function openEditor(def){
+  D = def; $("picker").hidden=true; $("editor").hidden=false; $("bar").hidden=false;
+  $("h1").textContent = EDIT_ID ? "Edit checklist" : "New checklist";
+  $("cTitle").value = D.title||""; $("cSub").value = D.subtitle||"";
+  $("cTitle").oninput = ()=>{ D.title=$("cTitle").value; };
+  $("cSub").oninput = ()=>{ D.subtitle=$("cSub").value; };
+  const lv=()=>{ $("lv2").setAttribute("aria-pressed",String(D.levels!==3)); $("lv3").setAttribute("aria-pressed",String(D.levels===3)); };
+  $("lv2").onclick=()=>{ D.levels=2; lv(); }; $("lv3").onclick=()=>{ D.levels=3; lv(); }; lv();
+  const tg=(id,key,def)=>{ const b=$(id); const set=()=>b.setAttribute("aria-pressed",String(D[key]===undefined?def:!!D[key])); b.onclick=()=>{ D[key]=!(D[key]===undefined?def:D[key]); set(); }; set(); };
+  tg("tEmail","emailMe",true); tg("tShare","shared",false);
+  if (D.sections.length <= 2) D.sections.forEach(s=>openSec[s.id]=true);
+  $("del").hidden = !EDIT_ID;
+  renderSections();
+}
+
+function move(arr,i,d){ const j=i+d; if(j<0||j>=arr.length) return; [arr[i],arr[j]]=[arr[j],arr[i]]; }
+function iconBtn(txt,label,fn,cls,disabled){ const b=el("button","ib "+(cls||""),txt); b.type="button"; b.setAttribute("aria-label",label); b.onclick=fn; b.disabled=!!disabled; return b; }
+function flagBtn(label,on,fn){ const b=el("button","flag",label); b.type="button"; b.setAttribute("aria-pressed",String(!!on)); b.onclick=()=>{ fn(); b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true")); }; return b; }
+function textIn(val,ph,fn,label){ const i=el("input"); i.type="text"; i.value=val||""; i.placeholder=ph; i.setAttribute("aria-label",label||ph); i.oninput=()=>fn(i.value); return i; }
+
+function renderSections(){
+  const box=$("sections"); box.innerHTML="";
+  D.sections.forEach((s,si)=>{
+    const card=el("section","card sec");
+    const head=el("div","sec-head");
+    const info=el("div"); info.style.cssText="flex:1;min-width:0";
+    info.append(el("div","type",KIND_LABEL[s.kind]), el("div","ttl",s.title||"Untitled"));
+    head.append(info);
+    if (s.kind==="items") head.append(el("span","cnt",(s.items||[]).length+" items"));
+    if (s.kind==="yesno") head.append(el("span","cnt",(s.qs||[]).length+" questions"));
+    const open=!!openSec[s.id];
+    const ex=el("button","expand",open?"Done":"Edit"); ex.type="button"; ex.onclick=()=>{ openSec[s.id]=!open; renderSections(); };
+    const icons=el("div","icons");
+    icons.append(iconBtn("↑","Move section up",()=>{ move(D.sections,si,-1); renderSections(); },"",si===0),
+                 iconBtn("↓","Move section down",()=>{ move(D.sections,si,1); renderSections(); },"",si===D.sections.length-1),
+                 iconBtn("✕","Delete section",()=>{ D.sections.splice(si,1); renderSections(); },"del"));
+    head.append(ex, icons); card.append(head);
+    if (open){
+      const body=el("div","sec-body");
+      const lt=el("label","l"); lt.append("Section title", textIn(s.title,"Section title",v=>{ s.title=v; head.querySelector(".ttl").textContent=v||"Untitled"; }));
+      body.append(lt);
+      if (s.kind==="items"||s.kind==="text"){
+        const sw=el("div","flags"); sw.append(flagBtn("Whole section RM only", s.private, ()=>{ s.private=!s.private; })); body.append(sw);
+      }
+      if (s.kind==="items"){
+        (s.items||[]).forEach((it,ii)=>{
+          const row=el("div","item");
+          const top=el("div","item-top");
+          top.append(textIn(it.t,"What to check, e.g. Oil bay pits",v=>it.t=v,"Item "+(ii+1)+" name"));
+          top.append(iconBtn("↑","Move item up",()=>{ move(s.items,ii,-1); renderSections(); },"",ii===0),
+                     iconBtn("↓","Move item down",()=>{ move(s.items,ii,1); renderSections(); },"",ii===s.items.length-1),
+                     iconBtn("✕","Delete item",()=>{ s.items.splice(ii,1); renderSections(); },"del"));
+          row.append(top, textIn(it.d,"What to look for (optional)",v=>it.d=v,"Item "+(ii+1)+" description"));
+          const fl=el("div","flags");
+          fl.append(flagBtn("📷 Camera when flagged", it.photo, ()=>{ it.photo=!it.photo; }), flagBtn("RM only", it.private, ()=>{ it.private=!it.private; }));
+          row.append(fl); body.append(row);
+        });
+        const a=el("button","add","+ Add item"); a.type="button"; a.onclick=()=>{ s.items.push({ id:uid(), t:"", d:"", photo:true, private:false }); renderSections(); setTimeout(()=>{ const ins=card.querySelectorAll(".item-top input"); if(ins.length) ins[ins.length-1].focus(); },0); };
+        body.append(a);
+      } else if (s.kind==="yesno"){
+        (s.qs||[]).forEach((q,qi)=>{
+          const row=el("div","item-top");
+          row.append(textIn(q.q,"Question, e.g. Pit covers locked?",v=>q.q=v,"Question "+(qi+1)),
+            iconBtn("↑","Move question up",()=>{ move(s.qs,qi,-1); renderSections(); },"",qi===0),
+            iconBtn("↓","Move question down",()=>{ move(s.qs,qi,1); renderSections(); },"",qi===s.qs.length-1),
+            iconBtn("✕","Delete question",()=>{ s.qs.splice(qi,1); renderSections(); },"del"));
+          body.append(row);
+        });
+        const a=el("button","add","+ Add question"); a.type="button"; a.onclick=()=>{ s.qs.push({ id:uid(), q:"" }); renderSections(); };
+        body.append(a);
+      } else if (s.kind==="text"){
+        const l=el("label","l"); l.append("Hint inside the box", textIn(s.placeholder,"e.g. Anything else from the visit",v=>s.placeholder=v)); body.append(l);
+      } else if (s.kind==="photo"){
+        const l=el("label","l"); l.append("Instruction", textIn(s.note,"e.g. Snap the lube bay as you walk in",v=>s.note=v)); body.append(l);
+      }
+      card.append(body);
+    }
+    box.append(card);
+  });
+}
+document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ const s=newSection(b.dataset.add); D.sections.push(s); openSec[s.id]=true; renderSections(); });
+
+/* ---- save / delete ---- */
+function showErr(t){ const m=$("err"); m.textContent=t; m.hidden=!t; if(t) m.scrollIntoView({behavior:"smooth",block:"center"}); }
+function clean(def){
+  const c=JSON.parse(JSON.stringify(def));
+  c.title=(c.title||"").trim(); c.subtitle=(c.subtitle||"").trim();
+  c.sections=c.sections.map(s=>{
+    s.title=(s.title||"").trim()||KIND_LABEL[s.kind];
+    if (s.items) s.items=s.items.filter(i=>(i.t||"").trim()).map(i=>({ ...i, t:i.t.trim(), d:(i.d||"").trim() }));
+    if (s.qs) s.qs=s.qs.filter(q=>(q.q||"").trim()).map(q=>({ ...q, q:q.q.trim() }));
+    return s;
+  }).filter(s=>!(s.kind==="items" && !s.items.length) && !(s.kind==="yesno" && !s.qs.length));
+  return c;
+}
+$("save").onclick = async ()=>{
+  const def=clean(D);
+  if (!def.title){ showErr("Give the checklist a name."); $("cTitle").focus(); return; }
+  if (!def.sections.some(s=>s.kind==="items")){ showErr("Add at least one checklist item."); return; }
+  showErr("");
+  const p=profile(); const btn=$("save"); btn.disabled=true; btn.textContent="Saving…";
+  try {
+    const j = await callScript({ action:"saveChecklist", email:p.email, name:p.name||"", id:EDIT_ID||"", checklist:def });
+    const cache = lsGet(CUSTOM_CACHE_KEY) || {};
+    cache[j.id] = { id:j.id, title:def.title, owner:p.email, ownerName:p.name||"", shared:!!def.shared, mine:true, def, updated:Date.now() };
+    lsSet(CUSTOM_CACHE_KEY, cache);
+    location.href = "index.html?saved=" + encodeURIComponent(j.id);
+  } catch(e){ showErr("Couldn't save. " + (e.message||"") + " Check your signal and try again."); }
+  finally { btn.disabled=false; btn.textContent="Save checklist"; }
+};
+$("del").onclick = ()=>{ $("confirmDel").hidden=false; $("confirmDel").scrollIntoView({behavior:"smooth",block:"center"}); };
+$("noDel").onclick = ()=>{ $("confirmDel").hidden=true; };
+$("yesDel").onclick = async ()=>{
+  const p=profile();
+  try {
+    await callScript({ action:"deleteChecklist", email:p.email, id:EDIT_ID });
+    const cache = lsGet(CUSTOM_CACHE_KEY) || {}; delete cache[EDIT_ID]; lsSet(CUSTOM_CACHE_KEY, cache);
+    location.href = "index.html";
+  } catch(e){ showErr("Couldn't delete. " + (e.message||"")); }
+};
+
+/* ---- start ---- */
+async function boot(){
+  const p=profile();
+  if (!p || !p.email){ $("profile").hidden=false; return; }
+  const cache = lsGet(CUSTOM_CACHE_KEY) || {};
+  custom = Object.values(cache);
+  try {
+    const j = await callScript({ action:"listChecklists", email:p.email });
+    custom = j.checklists || [];
+    const fresh = {}; custom.forEach(c=>fresh[c.id]=c); lsSet(CUSTOM_CACHE_KEY, fresh);
+  } catch(e){ /* use what's cached */ }
+  const find = id => custom.find(c=>c.id===id);
+  if (EDIT_ID){
+    const c=find(EDIT_ID);
+    if (!c){ EDIT_ID=null; showPicker(); const m=$("err"); $("picker").after(m); showErr("Couldn't find that checklist. It may have been deleted. Pick a starting point instead."); return; }
+    if (!c.mine){ EDIT_ID=null; history.replaceState(null,"","builder.html"); openEditor(copyOf(c.def)); return; }
+    openEditor(JSON.parse(JSON.stringify(c.def)));
+  } else if (COPY_ID){
+    const c=find(COPY_ID); if (c) openEditor(copyOf(c.def)); else showPicker();
+  } else if (FROM && STANDARD[FROM]){
+    openEditor(standardToCustom(FROM));
+  } else showPicker();
+}
+boot();
+</script>
+</body>
+</html>

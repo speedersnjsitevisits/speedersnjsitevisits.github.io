@@ -121,7 +121,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 </header>
 <div class="wrap inner gutter" id="app">
 
-  <div id="setupMsg" class="msg warn" hidden>Sending isn't set up yet. You can fill this in, and it saves as you go, but Submit won't work until the Google script link is added.</div>
 
   <section class="card" id="profile" hidden>
     <div class="pad">
@@ -134,6 +133,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     </div>
   </section>
 
+  <div class="msg warn" id="loading">Loading checklist…</div>
+  <div id="main" hidden style="display:contents">
   <section class="card">
     <div class="fields">
       <label class="l" for="location"><span>Location <span class="req">*</span></span><input type="text" id="location" placeholder="Store name"></label>
@@ -143,10 +144,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   </section>
 
   <div id="form" class="sec" style="gap:22px"></div>
+  </div>
 </div>
 
 <div class="inner gutter done" id="doneView" hidden>
-  <div class="big">Sent</div>
+  <div class="big" id="doneBig">Sent</div>
   <p id="doneText">Check your inbox for the GM report and your RM-only notes.</p>
   <a class="back" href="./">Back to the hub</a>
 </div>
@@ -158,180 +160,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   </div>
 </div>
 
+<script src="checklists.js"></script>
 <script>
-/* ===== SETTINGS ===== */
-// Paste the Google script Web App link between the quotes.
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjEfNXr04v9rmbOPvOAzOe7y3PebjVyI4A7dMulP5N5zjqGK55MJZKMj1uGeBII_Q/exec";
-/* ==================== */
-
-const P = true; // shorthand: item gets a camera when flagged
-
-const TUNNEL = {
-  title: "Tunnel Walk", kicker: "Wash shut down", levels: 3,
-  blocks: [
-    { kind:"items", id:"tunnel", title:"Tunnel Walk", note:"Walk the tunnel with the wash off. Use a flashlight.", items:[
-      ["y","Y section","No sharp points or broken brackets"],
-      ["trapIn","Entrance trap door","Tight and quiet"],
-      ["roller","Roller-up","Forks and bearings secure, auto roller working"],
-      ["wobble","Equipment wobble or clanking","No equipment wobbling or clanking"],
-      ["nozzles","Nozzles and foamers","All 100% working"],
-      ["retracts","Retracts","Wraps, tire brushes and tire shiners all retract properly"],
-      ["grates","Floor grates","Solid, none missing"],
-      ["trapOut","Exit trap door and guide rails","Tight, yellow guide rails in place through the tunnel"],
-      ["sprayers","Front and rear sprayers","Pumping, no leaks"],
-      ["mitters","Mitters","Bushings OK, cloth in good condition, no oil leaks"],
-      ["tirebrush","Tire brushes (poodle brushes)","Bearings, motors and hoses OK, no leaks, bumpers tight, spring tension good, no air leaking from the cylinder, cylinder shaft not coming loose, no wobble when spinning"],
-      ["wraps","Wraps","Bumpers in position, shocks not leaking, no air leak from the cylinder when energized, pillow block bearings tight with no hanging grease, locking collars in place, four-bolt bearings tight, hub shaft welds secure, hydraulic lines proper, no hydraulic leaks, no lower cloth missing (check while spinning)"],
-      ["rockers","Rockers","Bumpers OK, bearings tight with no slop, no wobble when spinning, no missing cloth, no hydraulic leaks underneath, hoses and clamps tight"],
-      ["vanhighs","Van Highs","Bumpers in position, shocks not leaking, pillow block bearings tight with no hanging grease, motor mount tight to the long arm, four-bolt bearings tight, hub shaft welds secure, hydraulic lines proper, no hydraulic leaks, no lower cloth missing (check while spinning)"],
-      ["shiners","Tire shiners","Bearings, motors and hoses OK, no leaks, bumpers tight, no air leaking from the cylinder, cylinder shaft not coming loose, spins slow with no wobble, test that chemical hits both brushes"],
-      ["blowers","Blowers","All bolts secure, no heavy vibration, no groaning when slowing down, nozzle screens clean on the intake side and inside the nozzle"],
-      ["clean","Tunnel cleanliness","Walls, floors and dryer stands clean"],
-      ["lights","Lights","All arch, stick, puck and lollipop lights working"],
-      ["compressors","Air compressors","No odd noises, belts good, no air leaks, auto drains working"]
-    ].map(([id,t,d])=>({id,t,d,photo:P}))},
-    { kind:"text", id:"overall", title:"Overall notes", placeholder:"Anything else from the walk" },
-    { kind:"yesno", id:"final", title:"Before you leave", qs:[
-      { id:"tickets", q:"Maintenance tickets submitted?" }
-    ]}
-  ]
-};
-
-const OPS = {
-  title: "Operations Visit", kicker: "Wash running", levels: 2,
-  blocks: [
-    { kind:"photo", id:"arrival", title:"Arrival", note:"Snap the site as you pull in." },
-    { kind:"items", id:"arrivalItems", title:"Arrival", hideTitle:true, items:[
-      { id:"curb", t:"Curb appeal", d:"Landscaping, bushes and trees, flowerbeds litter-free, curbs not chipped, nothing blocking signs", photo:P },
-      { id:"signage", t:"Signage", d:"Street sign, banners, station and machine decals, POS and member lanes, menus. Tight, not faded, lit at night", photo:P }
-    ]},
-    { kind:"items", id:"wash", title:"Wash Quality", items:[
-      { id:"exit", t:"Exit check", d:"Cars coming out dry and clean, including your own test wash", photo:P },
-      { id:"drive", t:"Drive-through experience", d:"Foam coverage, scent shot, cloth moving smoothly, all arch, stick, puck and lollipop lights working", photo:P },
-      { id:"rinse", t:"Rinse and drying agent break", photo:P },
-      { id:"tunnelLook", t:"Tunnel appearance", d:"Entrance clutter-free, white walls clean, dryers clean", photo:P },
-      { id:"tunnelEquip", t:"In-tunnel equipment", d:"Rear applicators cover SUV windows, front bumper spray covers grills, no wobble or clanking, nozzles and foamers working", photo:P }
-    ]},
-    { kind:"items", id:"lot", title:"Safety and Lot", items:[
-      { id:"hazards", t:"Slip, trip and fall hazards", d:"Concrete and asphalt, sharp objects", photo:P },
-      { id:"lights", t:"Lot light timers set correctly" }
-    ]},
-    { kind:"items", id:"people", title:"Our People", note:"Everyone on site.", items:[
-      { id:"uniform", t:"Uniform", d:"Branded and clean, company-logo coats and hats only, no cargo pants", photo:P },
-      { id:"safety", t:"Safety", d:"Safe visible positions, head on a swivel, no phones, earbuds or headphones, high-vis in the lot, PPE where needed", photo:P },
-      { id:"energy", t:"Energy", d:"Smiles, engaged, no zombies", photo:P }
-    ]},
-    { kind:"items", id:"culture", title:"Culture", items:[
-      { id:"vibe", t:"Team vibe", d:"Start with the GM and leaders. They set the tone", photo:P },
-      { id:"coach", t:"Coach GM and leaders first", private:true },
-      { id:"chats", t:"Teammate chats", d:"Recognise them. Ask what they'd change, if they feel valued, if they'd recommend working here, how to improve the experience", private:true }
-    ]},
-    { kind:"items", id:"csa", title:"CSA", items:[
-      { id:"csaPos", t:"In position and greeting cars and members", photo:P },
-      { id:"firstFeel", t:"First Feel scores and RPM reviewed daily" },
-      { id:"sales", t:"Sales coaching", d:"Listen, encourage, celebrate wins" },
-      { id:"flyers", t:"Flyers and handouts used correctly", photo:P },
-      { id:"stations", t:"Stations and equipment working and organised", photo:P },
-      { id:"ineff", t:"Inefficiencies to raise with the GM" }
-    ]},
-    { kind:"items", id:"ero", title:"ERO", items:[
-      { id:"guest", t:"Guest interaction", d:"Micro performances on every car, PA and mic, RXS standards", photo:P },
-      { id:"loading", t:"Loading", d:"Clear hand signals, auto roller, smooth entry, no bumped rims", photo:P },
-      { id:"eroArea", t:"Position and area", d:"Outside the conveyor railing, area clean, no food or drink", photo:P }
-    ]},
-    { kind:"items", id:"lc", title:"Lot Concierge", items:[
-      { id:"helping", t:"Helping guests", d:"Showing machines, drying cars, tire shine", photo:P },
-      { id:"lcArea", t:"Area clean", photo:P },
-      { id:"reviews", t:"Asking happy guests for Google reviews" }
-    ]},
-    { kind:"toggle", id:"fs", title:"Full Service", q:"Is this a full service site?" },
-    { kind:"items", id:"fsItems", title:"Full Service", fsOnly:true, items:[
-      { id:"verified", t:"Every car verified", d:"Members and barcodes scanned, single washes get the Full Service windshield flyer", photo:P },
-      { id:"interior", t:"Interior quality", d:"Carpets, windows, dash and cupholders", photo:P },
-      { id:"handoff", t:"Final inspection and handoff", d:"Floor mats back in before handoff", photo:P },
-      { id:"wait", t:"Wait times" },
-      { id:"upsell", t:"Upselling", d:"Interior packages and add-ons" },
-      { id:"fsSupplies", t:"Supplies and stations", d:"Towels, chemicals, vacuums stocked and organised", photo:P }
-    ]},
-    { kind:"items", id:"gm", title:"GM and Site Leaders", private:true, items:[
-      { id:"positive", t:"Positive leadership", d:"Visibly being positive influencers" },
-      { id:"fifty", t:"50-yard line", d:"Positioned to see the whole operation, not stuck in the office" },
-      { id:"balance", t:"Work-life balance" },
-      { id:"cc", t:"Using Culture Code" },
-      { id:"struggles", t:"Hidden struggles", d:"Offer guidance or direction" },
-      { id:"concerns", t:"GM concerns", d:"Issues they want to raise with you" }
-    ]},
-    { kind:"items", id:"vac", title:"Vacuum Area", items:[
-      { id:"vacuums", t:"Vacuums", d:"Working, no leaks or loss of suction, bowls and socks emptied, canisters wiped", photo:P },
-      { id:"air", t:"Air", d:"Blowguns and tire inflators working", photo:P },
-      { id:"amen", t:"Amenities", d:"Labelled, towels stocked, detail cart organised", photo:P },
-      { id:"bins", t:"Bins", d:"Under three-quarters full, no litter", photo:P },
-      { id:"music", t:"Music", d:"Fun and loud, commercials playing" }
-    ]},
-    { kind:"items", id:"guestExp", title:"Guest Experience", items:[
-      { id:"salad", t:"Salad bar stocked and clean", photo:P },
-      { id:"saladUse", t:"Salad bar use", d:"Members taking one or two per item, CSAs correcting politely" },
-      { id:"rooms", t:"Mat rooms and restrooms clean", photo:P },
-      { id:"waiting", t:"Waiting area", photo:P, fs:true },
-      { id:"vending", t:"Vending machines clean and working", photo:P, fs:true },
-      { id:"popcorn", t:"Popcorn machine clean and stocked", photo:P, fs:true },
-      { id:"coffee", t:"Coffee and water stocked", photo:P, fs:true }
-    ]},
-    { kind:"items", id:"chem", title:"Chemical Room", items:[
-      { id:"gear", t:"Safety gear", d:"Splash goggles, gloves, SDS binder up to date, eyewash and shower working", photo:P },
-      { id:"equip", t:"Equipment", d:"Hydraulic packs, compressors, air leaks. No odd sounds, vibration or leaks", photo:P },
-      { id:"chems", t:"Chemicals", d:"Pumps drawing properly, no Pulsatron air lock, no fluid on top of barrels", photo:P },
-      { id:"room", t:"Room condition", d:"Clear path to MCC, breakers and disconnects, benches organised, bottle fill area dry", photo:P }
-    ]},
-    { kind:"items", id:"biz", title:"Business Review", items:[
-      { id:"results", t:"Results", d:"UL penetration and checklists. Praise the wins, ask about the misses" },
-      { id:"opps", t:"Opportunities" },
-      { id:"damages", t:"Customer damages", d:"Review claims and look for trends" },
-      { id:"training", t:"Training and staffing", d:"Training up to date, recruiting needs" },
-      { id:"writeups", t:"Recent write-ups", private:true }
-    ]},
-    { kind:"text", id:"deadlines", title:"Agreed fixes and deadlines", placeholder:"What the GM agreed to fix, and by when" },
-    { kind:"items", id:"sys", title:"Systems and Compliance", items:[
-      { id:"injury", t:"Injury poster, field guide and OSHA 300 forms", photo:P },
-      { id:"qr", t:"SF QR codes and UL offer working", photo:P },
-      { id:"pos", t:"POS and tablets working, no delays", photo:P }
-    ]},
-    { kind:"text", id:"wins", title:"Wins", placeholder:"What the team is doing well. This goes to the GM" },
-    { kind:"text", id:"reflection", title:"Reflection", private:true, placeholder:"What went well, where you can improve, the best part of your day" },
-    { kind:"yesno", id:"final", title:"Before you leave", qs:[
-      { id:"tickets", q:"Maintenance tickets submitted?" },
-      { id:"board", q:"Monday.com store employee board up to date?" },
-      { id:"tracker", q:"Monday.com store project tracker in use and up to date?" },
-      { id:"staffed", q:"All positions filled?", noteOn:"no", notePh:"Which roles need recruiting?" }
-    ]}
-  ]
-};
-
-const TYPE = new URLSearchParams(location.search).get("type") === "tunnel" ? "tunnel" : "ops";
-const CFG = TYPE === "tunnel" ? TUNNEL : OPS;
-const DRAFT_KEY = "svh-draft-" + TYPE, PROFILE_KEY = "svh-profile";
-function lsGet(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
-function lsSet(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
-function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+const params = new URLSearchParams(location.search);
+const CUSTOM_ID = params.get("custom");
+const TYPE = CUSTOM_ID ? "custom" : (params.get("type") === "tunnel" ? "tunnel" : "ops");
+const DRAFT_KEY = "svh-draft-" + (CUSTOM_ID ? "c-" + CUSTOM_ID : TYPE);
+let CFG = null;
 function $(id){ return document.getElementById(id); }
 function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
 function today(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
 
-// state: items[id] = {s, note, photos[]}, texts, answers, fs, arrival[]
-let S = { items:{}, texts:{}, answers:{}, notes:{}, fs:null, arrival:[] };
+// state: items[id] = {s, note, photos[]}, texts, answers, fs, photos[blockId][]
+let S = { items:{}, texts:{}, answers:{}, notes:{}, fs:null, photos:{} };
 const draft = lsGet(DRAFT_KEY);
-if (draft && draft.state) { S = Object.assign(S, draft.state); for (const k in S.items) S.items[k].photos = []; S.arrival = []; }
-
-document.title = CFG.title;
-$("title").textContent = CFG.title;
-$("kicker").textContent = CFG.kicker;
-$("date").value = (draft && draft.date) || today();
-$("location").value = (draft && draft.location) || "";
-$("mod").value = (draft && draft.mod) || "";
-if (!SCRIPT_URL) $("setupMsg").hidden = false;
+if (draft && draft.state) { S = Object.assign(S, draft.state); for (const k in S.items) S.items[k].photos = []; S.photos = {}; }
 
 function saveDraft(){
-  const st = JSON.parse(JSON.stringify(S, (k,v)=> k==="photos"||k==="arrival" ? undefined : v));
+  const st = JSON.parse(JSON.stringify(S, (k,v)=> k==="photos" ? undefined : v));
   lsSet(DRAFT_KEY, { state: st, date:$("date").value, location:$("location").value, mod:$("mod").value });
 }
 ["date","location","mod"].forEach(id=>$(id).addEventListener("input", saveDraft));
@@ -341,7 +187,7 @@ function showMe(){
   const p = lsGet(PROFILE_KEY);
   const me = $("me"); me.innerHTML = "";
   if (p && p.email){
-    me.append("Reports go to " + p.email + " · ");
+    me.append((CFG && CFG.emailMe === false ? "Signed in as " : "Reports go to ") + p.email + " · ");
     const b = el("a", null, "Change"); b.href="#"; b.onclick = e=>{ e.preventDefault(); $("rmName").value=p.name||""; $("rmEmail").value=p.email; $("profile").hidden=false; };
     me.append(b); $("profile").hidden = true;
   } else { $("profile").hidden = false; }
@@ -350,6 +196,7 @@ $("saveProfile").onclick = ()=>{
   const name=$("rmName").value.trim(), email=$("rmEmail").value.trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $("profileErr").textContent="Enter a full email address, like name@speeders.com."; $("profileErr").hidden=false; return; }
   $("profileErr").hidden=true; lsSet(PROFILE_KEY,{name,email}); showMe();
+  if (!CFG) boot();
 };
 
 /* ---- photos ---- */
@@ -438,7 +285,8 @@ function render(){
       sec.append(sectionTitle(b));
       if (b.note) sec.append(el("p","sec-note",b.note));
       const card = el("div","card pad");
-      const draw = ()=>{ card.innerHTML=""; card.append(photoPicker(S.arrival, draw)); };
+      const list = S.photos[b.id] || (S.photos[b.id] = []);
+      const draw = ()=>{ card.innerHTML=""; card.append(photoPicker(list, draw)); };
       draw(); sec.append(card);
     } else if (b.kind==="toggle"){
       sec.append(sectionTitle(b));
@@ -505,6 +353,7 @@ function showErr(t){
   m.textContent=t; m.hidden=false; m.scrollIntoView({behavior:"smooth",block:"center"});
 }
 $("submit").onclick = async ()=>{
+  if (!CFG) return;
   const prof = lsGet(PROFILE_KEY);
   if (!prof || !prof.email){ $("profile").hidden=false; $("profile").scrollIntoView({behavior:"smooth"}); return; }
   const loc=$("location").value.trim(), mod=$("mod").value.trim();
@@ -512,7 +361,6 @@ $("submit").onclick = async ()=>{
   if (CFG.blocks.some(b=>b.id==="fs") && S.fs===null){ showErr("Answer the Full Service question."); return; }
   const missing = visibleItems().find(x=>{ const st=itemState(x.it.id); return st.s==="emergency" && !st.note.trim(); });
   if (missing){ showErr("Add a note for the emergency on \""+missing.it.t+"\": what's wrong and who you contacted."); return; }
-  if (!SCRIPT_URL){ showErr("Sending isn't set up yet. Your answers are saved on this phone."); return; }
 
   const sections = [];
   CFG.blocks.forEach(b=>{
@@ -526,30 +374,61 @@ $("submit").onclick = async ()=>{
   const texts = CFG.blocks.filter(b=>b.kind==="text").map(b=>({ title:b.title, private:!!b.private, value:S.texts[b.id]||"", id:b.id }));
   const questions = [];
   CFG.blocks.filter(b=>b.kind==="yesno").forEach(b=>b.qs.forEach(q=>questions.push({ q:q.q, a:S.answers[q.id]||"", note:S.notes[q.id]||"" })));
-  const payload = { type:TYPE, typeTitle:CFG.title, location:loc, date:$("date").value, mod,
-    rmName:prof.name||"", rmEmail:prof.email, fullService:S.fs, sections, texts, questions,
-    arrival: S.arrival.map(p=>p.split(",")[1]) };
+  const photoSections = CFG.blocks.filter(b=>b.kind==="photo").map(b=>({ title:b.title, photos:(S.photos[b.id]||[]).map(p=>p.split(",")[1]) })).filter(p=>p.photos.length);
+  const noEmail = CFG.emailMe === false;
+  const payload = { type:TYPE, checklistId:CUSTOM_ID||"", typeTitle:CFG.title, location:loc, date:$("date").value, mod,
+    rmName:prof.name||"", rmEmail:prof.email, fullService:S.fs, sections, texts, questions, photoSections, noEmail };
 
   const btn=$("submit"); btn.disabled=true; btn.textContent="Sending…";
   try {
-    const r = await fetch(SCRIPT_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || "The script didn't accept the report.");
+    await callScript(payload);
     lsDel(DRAFT_KEY);
     $("app").hidden=true; $("bar").hidden=true; $("doneView").hidden=false;
-    const priv = !!(S.texts.reflection||"").trim() || sections.some(sec=>sec.items.some(i=>i.private && (i.note || i.s!=="good")));
-    $("doneText").textContent = priv
-      ? "Two emails are on their way to " + prof.email + ": the GM report you can forward, and your RM-only notes."
-      : "Your report is on its way to " + prof.email + ". It's the GM version, so you can forward it as is.";
+    const priv = texts.some(t=>t.private && t.value.trim()) || sections.some(sec=>sec.items.some(i=>i.private && (i.note || i.s!=="good")));
+    $("doneText").textContent = noEmail
+      ? "Saved to the visit log. This checklist is set not to email you, so nothing was sent."
+      : priv
+        ? "Two emails are on their way to " + prof.email + ": the GM report you can forward, and your RM-only notes."
+        : "Your report is on its way to " + prof.email + ". It's the GM version, so you can forward it as is.";
+    $("doneBig").textContent = noEmail ? "Saved" : "Sent";
     window.scrollTo(0,0);
   } catch(e){
     showErr("It didn't send. " + (e.message||"") + " Your answers are still here, so check your signal and tap Submit again. Photos stay too, as long as you don't leave this page.");
   } finally { btn.disabled=false; btn.textContent="Submit"; }
 };
 
+/* ---- start ---- */
+function start(){
+  document.title = CFG.title;
+  $("title").textContent = CFG.title;
+  $("kicker").textContent = CFG.kicker;
+  $("date").value = (draft && draft.date) || today();
+  $("location").value = (draft && draft.location) || "";
+  $("mod").value = (draft && draft.mod) || "";
+  $("loading").hidden = true;
+  $("main").hidden = false;
+  showMe();
+  render();
+}
+async function boot(){
+  if (!CUSTOM_ID){ CFG = STANDARD[TYPE]; start(); return; }
+  const cache = lsGet(CUSTOM_CACHE_KEY) || {};
+  if (cache[CUSTOM_ID]){ CFG = customToCfg(cache[CUSTOM_ID].def); start(); }
+  const prof = lsGet(PROFILE_KEY);
+  if (!prof || !prof.email){ if (!CFG){ $("loading").textContent = "Add your work email above to load your checklist."; showMe(); } return; }
+  try {
+    const j = await callScript({ action:"listChecklists", email:prof.email });
+    const c = (j.checklists||[]).find(x=>x.id===CUSTOM_ID);
+    j.checklists.forEach(x=>{ cache[x.id]=x; }); lsSet(CUSTOM_CACHE_KEY, cache);
+    if (!c){ if (!CFG) $("loading").textContent = "This checklist couldn't be found. It may have been deleted or unshared."; return; }
+    if (!CFG){ CFG = customToCfg(c.def); start(); }
+  } catch(e){
+    if (!CFG) $("loading").textContent = "Couldn't load this checklist. Check your signal and tap Refresh.";
+  }
+}
+
 $("refresh").onclick = ()=>{ const u=new URL(location.href); u.searchParams.set("r", Date.now()); location.replace(u.toString()); };
-showMe();
-render();
+boot();
 </script>
 </body>
 </html>

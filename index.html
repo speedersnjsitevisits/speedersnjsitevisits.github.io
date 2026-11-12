@@ -89,6 +89,13 @@ body:not(.editing) .del{display:none}
 button.primary{font:inherit;font-weight:700;padding:12px 18px;border-radius:12px;border:0;background:var(--yellow);color:var(--ink-on-yellow);cursor:pointer}
 .hint{color:var(--muted);font-size:.8rem;margin:0}
 .err{color:var(--red);font-size:.85rem;margin:0}
+.mylist .row a.go .u{white-space:normal}
+.mine-tag{display:inline-block;margin-left:6px;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--bg);color:var(--muted);vertical-align:2px}
+.rowbtn{font:inherit;font-size:.78rem;font-weight:700;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;white-space:nowrap}
+.build{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 16px;border-top:1px solid var(--line);font-weight:700;color:var(--fg);text-decoration:none;background:var(--bg)}
+.build span{width:24px;height:24px;border-radius:50%;background:var(--yellow);color:var(--ink-on-yellow);display:grid;place-items:center;font-weight:800}
+.empty{padding:16px;color:var(--muted);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;font-weight:700;padding:12px 18px;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:20}
 a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.tile{transition:none}}
 </style>
@@ -146,11 +153,18 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
   </section>
 
   <section>
+    <h2>My checklists</h2>
+    <div class="list mylist" id="mine"></div>
+  </section>
+
+  <section>
     <h2>Quick links</h2>
     <div class="list" id="links"></div>
   </section>
 </main>
+<div class="toast" id="toast" hidden></div>
 
+<script src="checklists.js"></script>
 <script>
 // Built-in links. To add one for everyone: copy a line and change the name and link.
 const LINKS = [
@@ -215,6 +229,48 @@ document.getElementById("refresh").addEventListener("click", ()=>{
 });
 
 render();
+
+/* ---- My checklists ---- */
+function drawMine(list, note){
+  const box=document.getElementById("mine"); box.innerHTML="";
+  if (note){ box.append(Object.assign(document.createElement("div"),{className:"empty",textContent:note})); }
+  else if (!list.length){ box.append(Object.assign(document.createElement("div"),{className:"empty",textContent:"No custom checklists yet. Build one for a lube center, detail shop, hand wash or anything else."})); }
+  list.forEach(c=>{
+    const row=document.createElement("div"); row.className="row";
+    const badge=document.createElement("span"); badge.className="badge"; badge.textContent=initials(c.title)||"✓"; badge.setAttribute("aria-hidden","true");
+    const a=document.createElement("a"); a.className="go"; a.href="visit.html?custom="+encodeURIComponent(c.id);
+    const t=document.createElement("span"); t.className="t"; t.textContent=c.title;
+    if (c.mine && c.shared){ const tag=document.createElement("span"); tag.className="mine-tag"; tag.textContent="Shared"; t.append(tag); }
+    const u=document.createElement("span"); u.className="u";
+    u.textContent = c.mine ? ((c.def && c.def.subtitle) || "Yours") : "Shared by " + (c.ownerName || c.owner);
+    a.append(t,u);
+    const btn=document.createElement("a"); btn.className="rowbtn";
+    btn.href = c.mine ? "builder.html?id="+encodeURIComponent(c.id) : "builder.html?copy="+encodeURIComponent(c.id);
+    btn.textContent = c.mine ? "Edit" : "Copy";
+    row.append(badge,a,btn); box.append(row);
+  });
+  const b=document.createElement("a"); b.className="build"; b.href="builder.html";
+  b.innerHTML='<span aria-hidden="true">+</span>Build a checklist';
+  box.append(b);
+}
+async function loadMine(){
+  const p = lsGet(PROFILE_KEY);
+  const cache = lsGet(CUSTOM_CACHE_KEY) || {};
+  const cached = Object.values(cache).sort((a,b)=>(b.mine-a.mine)||a.title.localeCompare(b.title));
+  if (!p || !p.email){ drawMine([], "Build a checklist to get started. You'll be asked for your work email once."); return; }
+  drawMine(cached);
+  try {
+    const j = await callScript({ action:"listChecklists", email:p.email });
+    const fresh={}; (j.checklists||[]).forEach(c=>fresh[c.id]=c); lsSet(CUSTOM_CACHE_KEY, fresh);
+    drawMine(j.checklists||[]);
+  } catch(e){ if (!cached.length) drawMine([], "Couldn't load your checklists. Check your signal and tap Refresh."); }
+}
+loadMine();
+if (new URLSearchParams(location.search).get("saved")){
+  const t=document.getElementById("toast"); t.textContent="Checklist saved"; t.hidden=false;
+  setTimeout(()=>{ t.hidden=true; },2500);
+  history.replaceState(null,"",location.pathname);
+}
 </script>
 </body>
 </html>
