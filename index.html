@@ -132,6 +132,8 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
         <p class="hint">Links you add are saved on this phone only. To remove one, tap Remove next to it while Settings is open.</p>
       </form>
     </div>
+    <h2 style="margin-top:18px">Checklists</h2>
+    <div class="list mylist" id="manage"></div>
   </section>
 
   <section>
@@ -152,7 +154,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
     </div>
   </section>
 
-  <section>
+  <section id="mineSec" hidden>
     <h2>My checklists</h2>
     <div class="list mylist" id="mine"></div>
   </section>
@@ -231,27 +233,29 @@ document.getElementById("refresh").addEventListener("click", ()=>{
 render();
 
 /* ---- My checklists ---- */
+function mkRow(c, withBtn){
+  const row=document.createElement("div"); row.className="row";
+  const badge=document.createElement("span"); badge.className="badge"; badge.textContent=initials(c.title)||"✓"; badge.setAttribute("aria-hidden","true");
+  const a=document.createElement("a"); a.className="go";
+  a.href = withBtn ? (c.mine ? "builder.html?id=" : "builder.html?copy=") + encodeURIComponent(c.id) : "visit.html?custom="+encodeURIComponent(c.id);
+  const t=document.createElement("span"); t.className="t"; t.textContent=c.title;
+  if (c.mine && c.shared){ const tag=document.createElement("span"); tag.className="mine-tag"; tag.textContent="Shared"; t.append(tag); }
+  const u=document.createElement("span"); u.className="u";
+  u.textContent = c.mine ? ((c.def && c.def.subtitle) || "Yours") : "Shared by " + (c.ownerName || c.owner);
+  a.append(t,u); row.append(badge,a);
+  if (withBtn){ const btn=document.createElement("a"); btn.className="rowbtn"; btn.href=a.href; btn.textContent = c.mine ? "Edit" : "Copy"; row.append(btn); }
+  else { const ar=document.createElement("span"); ar.className="arrow"; ar.textContent="›"; ar.setAttribute("aria-hidden","true"); row.append(ar); }
+  return row;
+}
 function drawMine(list, note){
-  const box=document.getElementById("mine"); box.innerHTML="";
-  if (note){ box.append(Object.assign(document.createElement("div"),{className:"empty",textContent:note})); }
-  else if (!list.length){ box.append(Object.assign(document.createElement("div"),{className:"empty",textContent:"No custom checklists yet. Build one for a lube center, detail shop, hand wash or anything else."})); }
-  list.forEach(c=>{
-    const row=document.createElement("div"); row.className="row";
-    const badge=document.createElement("span"); badge.className="badge"; badge.textContent=initials(c.title)||"✓"; badge.setAttribute("aria-hidden","true");
-    const a=document.createElement("a"); a.className="go"; a.href="visit.html?custom="+encodeURIComponent(c.id);
-    const t=document.createElement("span"); t.className="t"; t.textContent=c.title;
-    if (c.mine && c.shared){ const tag=document.createElement("span"); tag.className="mine-tag"; tag.textContent="Shared"; t.append(tag); }
-    const u=document.createElement("span"); u.className="u";
-    u.textContent = c.mine ? ((c.def && c.def.subtitle) || "Yours") : "Shared by " + (c.ownerName || c.owner);
-    a.append(t,u);
-    const btn=document.createElement("a"); btn.className="rowbtn";
-    btn.href = c.mine ? "builder.html?id="+encodeURIComponent(c.id) : "builder.html?copy="+encodeURIComponent(c.id);
-    btn.textContent = c.mine ? "Edit" : "Copy";
-    row.append(badge,a,btn); box.append(row);
-  });
+  const box=document.getElementById("mine"), man=document.getElementById("manage");
+  box.innerHTML=""; man.innerHTML="";
+  document.getElementById("mineSec").hidden = !list.length;
+  list.forEach(c=>{ box.append(mkRow(c,false)); man.append(mkRow(c,true)); });
+  if (note || !list.length){ const e=document.createElement("div"); e.className="empty"; e.textContent = note || "Build your own checklist for a lube center, detail shop, hand wash or anything else, or copy one of the standard ones and change it."; man.append(e); }
   const b=document.createElement("a"); b.className="build"; b.href="builder.html";
   b.innerHTML='<span aria-hidden="true">+</span>Build a checklist';
-  box.append(b);
+  man.append(b);
 }
 async function loadMine(){
   const p = lsGet(PROFILE_KEY);
