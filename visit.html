@@ -55,7 +55,8 @@ h2{font-family:var(--display);font-weight:600;font-size:1.25rem;letter-spacing:.
 .seg button[aria-pressed="true"].n{background:var(--needs-bg);color:var(--needs)}
 .seg button[aria-pressed="true"].e{background:var(--emerg-bg);color:var(--emerg)}
 @media (max-width:440px){.ihead{flex-direction:column}.seg{align-self:stretch}.seg button{flex:1}}
-.extras{display:flex;flex-direction:column;gap:8px}
+.extras{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.extras textarea,.extras .thumbs{align-self:stretch}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 .chip{font:inherit;font-size:.8rem;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer}
 textarea,input[type=text],input[type=email],input[type=date]{font:inherit;width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
@@ -116,9 +117,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 
   <section class="card">
     <div class="fields">
-      <label class="l" for="location">Location <span class="req">*</span><input type="text" id="location" placeholder="Store name"></label>
+      <label class="l" for="location"><span>Location <span class="req">*</span></span><input type="text" id="location" placeholder="Store name"></label>
       <label class="l" for="date">Date<input type="date" id="date"></label>
-      <label class="l full" for="mod">Manager on duty <span class="req">*</span><input type="text" id="mod" placeholder="Name"></label>
+      <label class="l full" for="mod"><span>Manager on duty <span class="req">*</span></span><input type="text" id="mod" placeholder="Name"></label>
     </div>
   </section>
 
