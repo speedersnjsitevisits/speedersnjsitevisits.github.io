@@ -14,6 +14,7 @@ html{color-scheme:light}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
 :root{
   --bg:#eef3f6; --surface:#ffffff; --fg:#122230; --muted:#5b6d7b; --line:#d5dfe6;
   --accent:#0a6fb8; --accent-ink:#ffffff; --good:#1c7c4a; --good-bg:#e1f3e8;
@@ -151,11 +152,26 @@ const TUNNEL = {
   title: "Tunnel Walk", kicker: "Wash shut down", levels: 3,
   blocks: [
     { kind:"items", id:"tunnel", title:"Tunnel Walk", note:"Walk the tunnel with the wash off. Use a flashlight.", items:[
-      ["y","Y section"],["trap","Trap doors"],["roller","Roller-up"],["nozzles","Nozzles and foamers"],
-      ["retracts","Retracts"],["grates","Floor grates"],["rails","Guide rails"],["sprayers","Sprayers"],
-      ["mitters","Mitters"],["tirebrush","Tire brushes"],["wraps","Wraps"],["rockers","Rockers"],
-      ["vanhighs","Van Highs"],["shiners","Tire shiners"],["blowers","Blowers"],["clean","Tunnel cleanliness"]
-    ].map(([id,t])=>({id,t,photo:P}))},
+      ["y","Y section","No sharp points or broken brackets"],
+      ["trapIn","Entrance trap door","Tight and quiet"],
+      ["roller","Roller-up","Forks and bearings secure, auto roller working"],
+      ["wobble","Equipment wobble or clanking","No equipment wobbling or clanking"],
+      ["nozzles","Nozzles and foamers","All 100% working"],
+      ["retracts","Retracts","Wraps, tire brushes and tire shiners all retract properly"],
+      ["grates","Floor grates","Solid, none missing"],
+      ["trapOut","Exit trap door and guide rails","Tight, yellow guide rails in place through the tunnel"],
+      ["sprayers","Front and rear sprayers","Pumping, no leaks"],
+      ["mitters","Mitters","Bushings OK, cloth in good condition, no oil leaks"],
+      ["tirebrush","Tire brushes (poodle brushes)","Bearings, motors and hoses OK, no leaks, bumpers tight, spring tension good, no air leaking from the cylinder, cylinder shaft not coming loose, no wobble when spinning"],
+      ["wraps","Wraps","Bumpers in position, shocks not leaking, no air leak from the cylinder when energized, pillow block bearings tight with no hanging grease, locking collars in place, four-bolt bearings tight, hub shaft welds secure, hydraulic lines proper, no hydraulic leaks, no lower cloth missing (check while spinning)"],
+      ["rockers","Rockers","Bumpers OK, bearings tight with no slop, no wobble when spinning, no missing cloth, no hydraulic leaks underneath, hoses and clamps tight"],
+      ["vanhighs","Van Highs","Bumpers in position, shocks not leaking, pillow block bearings tight with no hanging grease, motor mount tight to the long arm, four-bolt bearings tight, hub shaft welds secure, hydraulic lines proper, no hydraulic leaks, no lower cloth missing (check while spinning)"],
+      ["shiners","Tire shiners","Bearings, motors and hoses OK, no leaks, bumpers tight, no air leaking from the cylinder, cylinder shaft not coming loose, spins slow with no wobble, test that chemical hits both brushes"],
+      ["blowers","Blowers","All bolts secure, no heavy vibration, no groaning when slowing down, nozzle screens clean on the intake side and inside the nozzle"],
+      ["clean","Tunnel cleanliness","Walls, floors and dryer stands clean"],
+      ["lights","Lights","All arch, stick, puck and lollipop lights working"],
+      ["compressors","Air compressors","No odd noises, belts good, no air leaks, auto drains working"]
+    ].map(([id,t,d])=>({id,t,d,photo:P}))},
     { kind:"text", id:"overall", title:"Overall notes", placeholder:"Anything else from the walk" },
     { kind:"yesno", id:"final", title:"Before you leave", qs:[
       { id:"tickets", q:"Maintenance tickets submitted?" }
@@ -173,7 +189,7 @@ const OPS = {
     ]},
     { kind:"items", id:"wash", title:"Wash Quality", items:[
       { id:"exit", t:"Exit check", d:"Cars coming out dry and clean, including your own test wash", photo:P },
-      { id:"drive", t:"Drive-through experience", d:"Foam coverage, scent shot, light show, cloth moving smoothly", photo:P },
+      { id:"drive", t:"Drive-through experience", d:"Foam coverage, scent shot, cloth moving smoothly, all arch, stick, puck and lollipop lights working", photo:P },
       { id:"rinse", t:"Rinse and drying agent break", photo:P },
       { id:"tunnelLook", t:"Tunnel appearance", d:"Entrance clutter-free, white walls clean, dryers clean", photo:P },
       { id:"tunnelEquip", t:"In-tunnel equipment", d:"Rear applicators cover SUV windows, front bumper spray covers grills, no wobble or clanking, nozzles and foamers working", photo:P }

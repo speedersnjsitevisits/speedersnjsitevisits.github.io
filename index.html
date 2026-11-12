@@ -15,6 +15,7 @@ html{color-scheme:light}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
 /* Layout: single phone-first column — header, two big visit tiles, then a quick-links list you can add to */
 :root{
   --bg:#eef3f6; --surface:#ffffff; --fg:#122230; --muted:#5b6d7b; --line:#d5dfe6;
@@ -125,7 +126,8 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
 // Built-in links. To add one for everyone: copy a line and change the name and link.
 const LINKS = [
   { name: "Leaderboard", url: "https://leaderboard.summitwashholdings.com/#" },
-  { name: "CSA Evaluation", url: "https://airtable.com/appEzYVXmnkikWT9w/pagw8Ln8KWp50rQ62/form" }
+  { name: "CSA Evaluation", url: "https://airtable.com/appEzYVXmnkikWT9w/pagw8Ln8KWp50rQ62/form" },
+  { name: "Site Score", url: "https://sitescore.summitwashholdings.com/#" }
 ];
 
 const KEY = "svh-custom-links";
