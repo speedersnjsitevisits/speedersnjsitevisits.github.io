@@ -95,6 +95,14 @@ button.primary{font:inherit;font-weight:700;padding:12px 18px;border-radius:12px
 .build{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 16px;border-top:1px solid var(--line);font-weight:700;color:var(--fg);text-decoration:none;background:var(--bg)}
 .build span{width:24px;height:24px;border-radius:50%;background:var(--yellow);color:var(--ink-on-yellow);display:grid;place-items:center;font-weight:800}
 .empty{padding:16px;color:var(--muted);font-size:.9rem}
+.ver{padding-block:0 28px;text-align:center;color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;gap:12px;align-items:center}
+#ver{font:inherit;background:none;border:0;color:inherit;cursor:pointer;padding:6px;text-decoration:underline dotted;text-underline-offset:3px}
+#ver b{font-weight:700}
+#ver .warn{color:var(--red);font-weight:700}
+#changes{text-align:left;align-self:stretch;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:.85rem;color:var(--fg)}
+#changes h3{margin:10px 0 4px;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#changes h3:first-child{margin-top:0}
+#changes ul{margin:0;padding-left:18px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;font-weight:700;padding:12px 18px;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:20}
 a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.tile{transition:none}}
@@ -164,6 +172,10 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
     <div class="list" id="links"></div>
   </section>
 </main>
+<footer class="inner gutter ver">
+  <button type="button" id="ver" aria-expanded="false" aria-controls="changes"></button>
+  <div id="changes" hidden></div>
+</footer>
 <div class="toast" id="toast" hidden></div>
 
 <script src="checklists.js"></script>
@@ -270,6 +282,32 @@ async function loadMine(){
   } catch(e){ if (!cached.length) drawMine([], "Couldn't load your checklists. Check your signal and tap Refresh."); }
 }
 loadMine();
+/* ---- versions ---- */
+let scriptVer = "checking…";
+function drawVer(){
+  const v=document.getElementById("ver");
+  const app = typeof APP_VERSION !== "undefined" ? APP_VERSION : "?";
+  const behind = /^\d/.test(scriptVer) ? scriptVer !== app : /old/.test(scriptVer);
+  v.innerHTML = "RM Hub <b>v" + app + "</b>" + (typeof APP_UPDATED !== "undefined" ? " · updated " + APP_UPDATED : "") +
+    (behind ? ' · <span class="warn">Google script needs updating</span>' : "");
+}
+drawVer();
+(async()=>{
+  try { const j = await callScript({ action:"version" }); scriptVer = j.version || "old"; }
+  catch(e){ scriptVer = /Location and manager/.test(e.message||"") ? "old, needs update" : "offline"; }
+  drawVer();
+})();
+document.getElementById("ver").onclick = ()=>{
+  const box=document.getElementById("changes"), b=document.getElementById("ver");
+  if (box.hidden && typeof CHANGELOG !== "undefined"){
+    box.innerHTML="";
+    CHANGELOG.forEach(c=>{
+      const h=document.createElement("h3"); h.textContent="v"+c.v+" · "+c.date; box.append(h);
+      const ul=document.createElement("ul"); c.notes.forEach(n=>{ const li=document.createElement("li"); li.textContent=n; ul.append(li); }); box.append(ul);
+    });
+  }
+  box.hidden=!box.hidden; b.setAttribute("aria-expanded", String(!box.hidden));
+};
 if (new URLSearchParams(location.search).get("saved")){
   const t=document.getElementById("toast"); t.textContent="Checklist saved"; t.hidden=false;
   setTimeout(()=>{ t.hidden=true; },2500);

@@ -2,6 +2,28 @@
    Used by the hub, the questionnaires and the checklist builder. */
 
 /* ===== SETTINGS ===== */
+// Bump APP_VERSION every time anything changes, and add a line to CHANGELOG.
+// Set SCRIPT_VERSION at the top of the Google script to the same number.
+const APP_VERSION = "1.5";
+const APP_UPDATED = "Nov 13, 2026";
+const CHANGELOG = [
+  { v:"1.5", date:"Nov 13, 2026", notes:[
+    "Version number at the bottom of the hub (tap it to see what changed)",
+    "Full service question moved under Manager on duty; Operations Visit stays hidden until it's answered",
+    "Emails split into [GM] (safe to forward) and [RM full report] (everything)",
+    "Renamed to RM Hub"
+  ]},
+  { v:"1.4", date:"Nov 12, 2026", notes:[
+    "Checklist builder in Settings: build from blank or copy and edit, share with all RMs, email on or off",
+    "Site Score added to quick links"
+  ]},
+  { v:"1.3", date:"Nov 12, 2026", notes:[
+    "New Speeders look, refresh button, mascot header",
+    "Tunnel Walk now has all 19 checks with full descriptions"
+  ]},
+  { v:"1.0", date:"Nov 12, 2026", notes:["First version: hub, Tunnel Walk, Operations Visit, emailed reports"] }
+];
+
 // The Google script Web App link.
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjEfNXr04v9rmbOPvOAzOe7y3PebjVyI4A7dMulP5N5zjqGK55MJZKMj1uGeBII_Q/exec";
 /* ==================== */
@@ -42,6 +64,7 @@ const TUNNEL = {
 const OPS = {
   title: "Operations Visit", kicker: "Wash running", levels: 2,
   blocks: [
+    { kind:"toggle", id:"fs", title:"Full Service", q:"Is this a full service site?" },
     { kind:"photo", id:"arrival", title:"Arrival", note:"Snap the site as you pull in." },
     { kind:"items", id:"arrivalItems", title:"Arrival", hideTitle:true, items:[
       { id:"curb", t:"Curb appeal", d:"Landscaping, bushes and trees, flowerbeds litter-free, curbs not chipped, nothing blocking signs", photo:P },
@@ -86,7 +109,6 @@ const OPS = {
       { id:"lcArea", t:"Area clean", photo:P },
       { id:"reviews", t:"Asking happy guests for Google reviews" }
     ]},
-    { kind:"toggle", id:"fs", title:"Full Service", q:"Is this a full service site?" },
     { kind:"items", id:"fsItems", title:"Full Service", fsOnly:true, items:[
       { id:"verified", t:"Every car verified", d:"Members and barcodes scanned, single washes get the Full Service windshield flyer", photo:P },
       { id:"interior", t:"Interior quality", d:"Carpets, windows, dash and cupholders", photo:P },
