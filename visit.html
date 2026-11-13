@@ -81,6 +81,11 @@ textarea{min-height:72px;resize:vertical}
 @media (max-width:440px){.fields{grid-template-columns:1fr}}
 label.l{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.82rem;min-width:0}
 .req{color:var(--red)}
+#fsSlot{display:flex;flex-direction:column;gap:6px}
+#fsSlot > span{font-weight:700;font-size:.82rem}
+#fsSlot .seg{align-self:stretch}
+#fsSlot .seg button{flex:1;padding:11px 10px;font-size:.9rem}
+.gate{padding:18px 16px;text-align:center;color:var(--muted);font-weight:600}
 .yn{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-top:1px solid var(--line)}
 .yn:first-child{border-top:0}
 .ynrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -140,6 +145,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
       <label class="l" for="location"><span>Location <span class="req">*</span></span><input type="text" id="location" placeholder="Store name"></label>
       <label class="l" for="date">Date<input type="date" id="date"></label>
       <label class="l full" for="mod"><span>Manager on duty <span class="req">*</span></span><input type="text" id="mod" placeholder="Name"></label>
+      <div class="l full" id="fsSlot" hidden></div>
     </div>
   </section>
 
@@ -269,7 +275,26 @@ function sectionTitle(b){
 
 function render(){
   const f = $("form"); f.innerHTML="";
+  const tog = CFG.blocks.find(b=>b.kind==="toggle");
+  const slot = $("fsSlot");
+  if (tog){
+    slot.hidden = false; slot.innerHTML = "";
+    slot.append(Object.assign(el("span"), { innerHTML: tog.q.replace("Is this a full service site?","Full service site?") + ' <span class="req">*</span>' }));
+    const seg = el("div","seg"); seg.setAttribute("role","group"); seg.setAttribute("aria-label",tog.q);
+    [["Yes",true,"g"],["No",false,"n"]].forEach(([lab,v,c])=>{
+      const btn=el("button",c,lab); btn.type="button"; btn.setAttribute("aria-pressed", String(S.fs===v));
+      btn.onclick=()=>{ S.fs=v; saveDraft(); render(); };
+      seg.append(btn);
+    });
+    slot.append(seg);
+    if (S.fs === null || S.fs === undefined){
+      f.append(el("div","card gate","Answer Full service site? above to start the checklist."));
+      $("count").textContent = "Answer the full service question to start";
+      return;
+    }
+  } else { slot.hidden = true; }
   CFG.blocks.forEach(b=>{
+    if (b.kind==="toggle") return;
     if (b.fsOnly && S.fs !== true) return;
     const sec = el("section","sec");
     if (b.kind==="items"){
@@ -358,7 +383,7 @@ $("submit").onclick = async ()=>{
   if (!prof || !prof.email){ $("profile").hidden=false; $("profile").scrollIntoView({behavior:"smooth"}); return; }
   const loc=$("location").value.trim(), mod=$("mod").value.trim();
   if (!loc || !mod){ window.scrollTo({top:0,behavior:"smooth"}); showErr("Fill in the location and manager on duty first."); return; }
-  if (CFG.blocks.some(b=>b.id==="fs") && S.fs===null){ showErr("Answer the Full Service question."); return; }
+  if (CFG.blocks.some(b=>b.id==="fs") && S.fs===null){ window.scrollTo({top:0,behavior:"smooth"}); showErr("Answer the Full service site? question at the top first."); return; }
   const missing = visibleItems().find(x=>{ const st=itemState(x.it.id); return st.s==="emergency" && !st.note.trim(); });
   if (missing){ showErr("Add a note for the emergency on \""+missing.it.t+"\": what's wrong and who you contacted."); return; }
 
@@ -388,8 +413,8 @@ $("submit").onclick = async ()=>{
     $("doneText").textContent = noEmail
       ? "Saved to the visit log. This checklist is set not to email you, so nothing was sent."
       : priv
-        ? "Two emails are on their way to " + prof.email + ": the GM report you can forward, and your RM-only notes."
-        : "Your report is on its way to " + prof.email + ". It's the GM version, so you can forward it as is.";
+        ? "Two emails are on their way to " + prof.email + ": the [GM] report you can forward, and your [RM full report] with everything."
+        : "Your report is on its way to " + prof.email + ". Nothing was marked RM only, so it's safe to forward to the GM as is.";
     $("doneBig").textContent = noEmail ? "Saved" : "Sent";
     window.scrollTo(0,0);
   } catch(e){
